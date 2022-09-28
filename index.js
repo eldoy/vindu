@@ -9,7 +9,7 @@ module.exports = async function ($, opt = {}) {
     opt.collection = 'request'
   }
 
-  // Check ip address and fetch record in docbase
+  // Check ip address
   const ip = $.req.ip
   if (!ip) return false
 
@@ -18,7 +18,9 @@ module.exports = async function ($, opt = {}) {
     await $.db(opt.collection).update({ id: ip }, values)
   }
 
+  // Fetch document in database
   const doc = await $.db(opt.collection).get({ id: ip })
+
   if (!doc) {
     await $.db(opt.collection).create({ id: ip, n: 1, date: new Date() })
   } else {
