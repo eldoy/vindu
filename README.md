@@ -20,8 +20,8 @@ function rateLimit(res) {
   res.end('')
 }
 
-const result = await vindu($)
-if (result.throttle) {
+const throttle = await vindu($)
+if (throttle) {
   return rateLimit(res)
 }
 ```
