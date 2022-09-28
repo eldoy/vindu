@@ -1,14 +1,14 @@
 {
-  "name": "libinit",
+  "name": "vindu",
   "version": "0.1.0",
-  "description": "Library template",
+  "description": "Throttler for APIs",
   "main": "index.js",
   "scripts": {
     "test": "nodemon tests/vindu.test.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/eldoy/libinit"
+    "url": "https://github.com/eldoy/vindu.git"
   },
   "author": "Vidar Eldøy <vidar@eldoy.com>",
   "license": "MIT",
