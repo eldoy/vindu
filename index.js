@@ -9,35 +9,35 @@ module.exports = async function ($, opt = {}) {
     opt.collection = 'request'
   }
 
-  // Check ip address and fetch record in database
+  // Check ip address and fetch record in docbase
   const ip = $.req.ip
-  console.log({ ip })
   if (!ip) return false
 
-  async function update(values) {
+  async function update(values = {}) {
+    values.date = new Date()
     await $.db(opt.collection).update({ id: ip }, values)
   }
 
-  let data = await $.db(opt.collection).get({ id: ip })
-  if (data) {
+  let doc = await $.db(opt.collection).get({ id: ip })
+  if (!doc) {
+    await $.db(opt.collection).create({ id: ip, n: 1, date: new Date() })
+  } else {
     // Check if we did more than limit
     const oneMinuteAgo = new Date(new Date().getTime() - 60 * 1000)
 
-    // Check last updated_at is more than a second ago
-    const withinWindow = data.updated_at.getTime() > oneMinuteAgo
+    // Check last date is more than a second ago
+    const withinWindow = doc.date.getTime() > oneMinuteAgo
 
     if (withinWindow) {
-      if (data.n > opt.limit) {
-        await update({ updated_at: new Date() })
+      if (doc.n > opt.limit) {
+        await update()
         return true
       } else {
-        await update({ n: data.n + 1, updated_at: new Date() })
+        await update({ n: doc.n + 1 })
       }
     } else {
-      await update({ n: 1, updated_at: new Date() })
+      await update({ n: 1 })
     }
-  } else {
-    await $.db(opt.collection).create({ id: ip, n: 1, updated_at: new Date() })
   }
   return false
 }
