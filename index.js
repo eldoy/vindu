@@ -18,14 +18,14 @@ module.exports = async function ($, opt = {}) {
     await $.db(opt.collection).update({ id: ip }, values)
   }
 
-  let doc = await $.db(opt.collection).get({ id: ip })
+  const doc = await $.db(opt.collection).get({ id: ip })
   if (!doc) {
     await $.db(opt.collection).create({ id: ip, n: 1, date: new Date() })
   } else {
     // Check if we did more than limit
     const oneMinuteAgo = new Date(new Date().getTime() - 60 * 1000)
 
-    // Check last date is more than a second ago
+    // Check last date is more than a minute ago
     const withinWindow = doc.date.getTime() > oneMinuteAgo
 
     if (withinWindow) {
