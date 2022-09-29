@@ -1,6 +1,13 @@
 const LIMIT = 30 // requests per minute
 
 module.exports = async function ($, opt = {}) {
+  // Return if no db
+  if (!$.db) return false
+
+  // Check ip address
+  const ip = $.req.ip
+  if (!ip) return false
+
   if (typeof opt.limit == 'undefined') {
     opt.limit = LIMIT
   }
@@ -8,10 +15,6 @@ module.exports = async function ($, opt = {}) {
   if (!opt.collection) {
     opt.collection = 'request'
   }
-
-  // Check ip address
-  const ip = $.req.ip
-  if (!ip) return false
 
   async function update(values = {}) {
     values.date = new Date()
