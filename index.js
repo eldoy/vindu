@@ -4,9 +4,9 @@ module.exports = async function ($, opt = {}) {
   // Return if no db
   if (!$.db) return false
 
-  // Check ip address
-  const ip = $.req.ip
-  if (!ip) return false
+  // Use ip address as id in the database
+  const id = opt.id || $.req.ip
+  if (!id) return false
 
   if (typeof opt.limit == 'undefined') {
     opt.limit = LIMIT
@@ -18,21 +18,22 @@ module.exports = async function ($, opt = {}) {
 
   async function update(values = {}) {
     values.date = new Date()
-    await $.db(opt.collection).update({ id: ip }, values)
+    await $.db(opt.collection).update({ id }, values)
   }
 
-  // Fetch document in database
-  const doc = await $.db(opt.collection).get({ id: ip })
+  // Fetch record in database
+  const doc = await $.db(opt.collection).get({ id })
 
   if (!doc) {
-    await $.db(opt.collection).create({ id: ip, n: 1, date: new Date() })
+    await $.db(opt.collection).create({ id, n: 1, date: new Date() })
   } else {
-    // Check if we did more than limit
+    // Find the time one minute ago
     const oneMinuteAgo = new Date(new Date().getTime() - 60 * 1000)
 
     // Check last date is more than a minute ago
     const withinWindow = doc.date.getTime() > oneMinuteAgo
 
+    // Increase counter until limit is reached for the last minute
     if (withinWindow) {
       if (doc.n > opt.limit) {
         await update()
