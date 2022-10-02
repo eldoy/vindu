@@ -1,6 +1,6 @@
 {
   "name": "vindu",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Throttler for APIs",
   "main": "index.js",
   "scripts": {
