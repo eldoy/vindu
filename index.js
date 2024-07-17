@@ -14,7 +14,7 @@ module.exports = async function ($, opt = {}) {
 
   var oneMinuteAgo = new Date(new Date().getTime() - 60 * 1000)
   var count = await $.db(collection).count({
-    _id: { $lte: request.id },
+    id: { $lte: request.id },
     ip,
     created_at: { $gte: oneMinuteAgo }
   })
