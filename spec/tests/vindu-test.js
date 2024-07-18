@@ -1,76 +1,121 @@
+var util = require('../../lib/util.js')
+
 setup(async function ({ $ }) {
+  $.req = {}
   await $.db('request').delete()
 })
 
-it('should not throttle without ip address', async ({ t, $ }) => {
-  var result = await $.vindu($, { limit: 1 })
-  t.equal(result, false)
+it('should not count without key', async ({ t, $ }) => {
+  var throttler = await $.vindu($)
+
+  var result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
+
+  t.deepStrictEqual(result, Array(6).fill(0))
 
   var count = await $.db('request').count()
-  t.equal(count, 0)
-
-  result = await $.vindu($, { limit: 1 })
-  t.equal(result, false)
-
-  count = await $.db('request').count()
-  t.equal(count, 0)
+  t.equal(count, 1)
 })
 
-it('should throttle with ip address', async ({ t, $ }) => {
+it('should count with key', async ({ t, $ }) => {
+  var throttler = await $.vindu($, { key: '1' })
+
+  var result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
+
+  t.deepStrictEqual(result, Array(6).fill(1))
+
+  var count = await $.db('request').count()
+  t.equal(count, 1)
+})
+
+it('should count with ip', async ({ t, $ }) => {
   $.req.ip = '127.0.0.1'
 
-  var result = await $.vindu($, { limit: 1 })
-  t.ok(result === false)
+  var throttler = await $.vindu($)
 
-  var count = await $.db('request').count({ ip: $.req.ip })
+  var result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
+
+  t.deepStrictEqual(result, Array(6).fill(1))
+
+  var count = await $.db('request').count()
+  t.equal(count, 1)
+})
+
+it('should count with key', async ({ t, $ }) => {
+  $.req.ip = '127.0.0.1'
+
+  // 2 years ago
+  $.mockDate(util.ago(2, 'year'))
+  var throttler = await $.vindu($)
+  $.resetDate()
+
+  var result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
+
+  t.deepStrictEqual(result, [0, 0, 0, 0, 0, 1])
+
+  var count = await $.db('request').count()
   t.equal(count, 1)
 
-  // should throttle
-  result = await $.vindu($, { limit: 1 })
-  t.equal(result, true)
+  // 5 minutes ago
+  $.mockDate(util.ago(5, 'minute'))
+  throttler = await $.vindu($)
+  $.resetDate()
 
-  count = await $.db('request').count({ ip: $.req.ip })
+  result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
+
+  t.deepStrictEqual(result, [0, 1, 1, 1, 1, 2])
+
+  count = await $.db('request').count()
   t.equal(count, 2)
-})
 
-it('concurrency lower than limit should not throttle', async ({ t, $ }) => {
-  $.req.ip = '127.0.0.1'
+  // now
+  throttler = await $.vindu($)
 
-  var result = await Promise.all(
-    Array(3)
-      .fill(0)
-      .map(async () => $.vindu($, { limit: 5 }))
-  )
+  result = await Promise.all([
+    throttler.minute(),
+    throttler.hour(),
+    throttler.day(),
+    throttler.month(),
+    throttler.year(),
+    throttler.total()
+  ])
 
-  t.deepStrictEqual(result, Array(3).fill(false))
-})
+  t.deepStrictEqual(result, [1, 2, 2, 2, 2, 3])
 
-it('concurrency equal to limit should not throttle', async ({ t, $ }) => {
-  $.req.ip = '127.0.0.1'
-
-  var result = await Promise.all(
-    Array(5)
-      .fill(0)
-      .map(async () => $.vindu($, { limit: 5 }))
-  )
-
-  t.deepStrictEqual(result, Array(5).fill(false))
-})
-
-it('concurrency greater than limit should throttle', async ({ t, $ }) => {
-  $.req.ip = '127.0.0.1'
-
-  var result = await Promise.all(
-    Array(8)
-      .fill(0)
-      .map(async () => $.vindu($, { limit: 5 }))
-  )
-
-  t.equal(result.length, 8)
-
-  var allowed = result.filter((r) => r == false)
-  var blocked = result.filter((r) => r == true)
-
-  t.equal(allowed.length, 5)
-  t.equal(blocked.length, 3)
+  count = await $.db('request').count()
+  t.equal(count, 3)
 })
