@@ -29,7 +29,7 @@ module.exports = async function ($, opt = {}) {
       return count(util.ago(value * 30, 'day'))
     },
     year: async function (value = 1) {
-      return count(util.ago(value, 'year'))
+      return count(util.ago(value * 30 * 12, 'day'))
     },
     total: async function () {
       return count()
