@@ -1,23 +1,38 @@
-var LIMIT = 30 // requests per minute
+var util = require('./lib/util.js')
 
 module.exports = async function ($, opt = {}) {
-  // Return if no db
-  if (!$.db) return false
-
-  var ip = opt.ip || $.req.ip
-  if (!ip) return false
-
-  var limit = opt.limit || LIMIT
+  var key = opt.key || $.req?.ip
   var collection = opt.collection || 'request'
 
-  var request = await $.db(collection).create({ ip })
+  var request = await $.db(collection).create({ key })
 
-  var oneMinuteAgo = new Date(new Date().getTime() - 60 * 1000)
-  var count = await $.db(collection).count({
-    id: { $lte: request.id },
-    ip,
-    created_at: { $gte: oneMinuteAgo }
-  })
+  async function count(since) {
+    if (!key) return 0
+    var query = { id: { $lte: request.id }, key }
+    if (since) {
+      query.created_at = { $gte: since }
+    }
+    return $.db(collection).count(query)
+  }
 
-  return count > limit
+  return {
+    minute: async function (value = 1) {
+      return count(util.ago(value, 'minute'))
+    },
+    hour: async function (value = 1) {
+      return count(util.ago(value, 'hour'))
+    },
+    day: async function (value = 1) {
+      return count(util.ago(value, 'day'))
+    },
+    month: async function (value = 1) {
+      return count(util.ago(value * 30, 'day'))
+    },
+    year: async function (value = 1) {
+      return count(util.ago(value, 'year'))
+    },
+    total: async function () {
+      return count()
+    }
+  }
 }
