@@ -61,7 +61,7 @@ it('should count with ip', async ({ t, $ }) => {
   t.equal(count, 1)
 })
 
-it('should count with key', async ({ t, $ }) => {
+it('should count per timeframe', async ({ t, $ }) => {
   $.req.ip = '127.0.0.1'
 
   // 2 years ago
@@ -115,6 +115,9 @@ it('should count with key', async ({ t, $ }) => {
   ])
 
   t.deepStrictEqual(result, [1, 2, 2, 2, 2, 3])
+
+  result = await throttler.minute(6)
+  t.equal(result, 2)
 
   count = await $.db('request').count()
   t.equal(count, 3)
