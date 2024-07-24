@@ -1,4 +1,4 @@
-var util = require('../../lib/util.js')
+var ago = require('../../lib/ago.js')
 
 setup(async function ({ $ }) {
   $.req = {}
@@ -65,7 +65,7 @@ it('should count per timeframe', async ({ t, $ }) => {
   $.req.ip = '127.0.0.1'
 
   // 2 years ago
-  $.mockDate(util.ago(2, 'year'))
+  $.mockDate(ago(2, 'year'))
   var throttler = await $.vindu($)
   $.resetDate()
 
@@ -84,7 +84,7 @@ it('should count per timeframe', async ({ t, $ }) => {
   t.equal(count, 1)
 
   // 5 minutes ago
-  $.mockDate(util.ago(5, 'minute'))
+  $.mockDate(ago(5, 'minute'))
   throttler = await $.vindu($)
   $.resetDate()
 

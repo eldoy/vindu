@@ -1,4 +1,4 @@
-var util = require('./lib/util.js')
+var ago = require('./lib/ago.js')
 
 module.exports = async function ($, opt = {}) {
   var key = opt.key || $.req?.ip
@@ -16,22 +16,22 @@ module.exports = async function ($, opt = {}) {
   }
 
   return {
-    minute: async function (value = 1) {
-      return count(util.ago(value, 'minute'))
+    minute: function (value = 1) {
+      return count(ago(value, 'minute'))
     },
-    hour: async function (value = 1) {
-      return count(util.ago(value, 'hour'))
+    hour: function (value = 1) {
+      return count(ago(value, 'hour'))
     },
-    day: async function (value = 1) {
-      return count(util.ago(value, 'day'))
+    day: function (value = 1) {
+      return count(ago(value, 'day'))
     },
-    month: async function (value = 1) {
-      return count(util.ago(value * 30, 'day'))
+    month: function (value = 1) {
+      return count(ago(value * 30, 'day'))
     },
-    year: async function (value = 1) {
-      return count(util.ago(value * 30 * 12, 'day'))
+    year: function (value = 1) {
+      return count(ago(value * 30 * 12, 'day'))
     },
-    total: async function () {
+    total: function () {
       return count()
     }
   }
