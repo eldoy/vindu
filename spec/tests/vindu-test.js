@@ -1,124 +1,38 @@
-var ago = require('../../lib/ago.js')
+var vindu = require('../../index.js')
+var { sleep } = require('extras')
+
+var $ = {}
 
 setup(async function ({ $ }) {
-  $.req = {}
+  $.req = { ip: '127.0.0.1', query: {}, params: {}, headers: {} }
   await $.db('request').delete()
+  await $.db('request-cache').delete()
 })
 
-it('should not count without key', async ({ t, $ }) => {
-  var throttler = await $.vindu($)
+it('should count and cache', async ({ t, $ }) => {
+  var { minute, month, year } = await vindu($)
 
-  var result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
+  t.equal(minute, 1)
+  t.equal(month, 1)
+  t.equal(year, 1)
 
-  t.deepStrictEqual(result, Array(6).fill(0))
+  await sleep(0.3)
 
-  var count = await $.db('request').count()
-  t.equal(count, 1)
-})
+  var requestCount = await $.db('request').count()
+  var cacheCount = await $.db('request-cache').count()
 
-it('should count with key', async ({ t, $ }) => {
-  var throttler = await $.vindu($, { key: '1' })
+  t.equal(requestCount, 1)
+  t.equal(cacheCount, 1)
 
-  var result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
+  var request = await $.db('request').get()
 
-  t.deepStrictEqual(result, Array(6).fill(1))
+  t.ok(!!request.key)
+  t.ok(!!request.query)
+  t.ok(!!request.params)
+  t.ok(!!request.headers)
 
-  var count = await $.db('request').count()
-  t.equal(count, 1)
-})
-
-it('should count with ip', async ({ t, $ }) => {
-  $.req.ip = '127.0.0.1'
-
-  var throttler = await $.vindu($)
-
-  var result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
-
-  t.deepStrictEqual(result, Array(6).fill(1))
-
-  var count = await $.db('request').count()
-  t.equal(count, 1)
-})
-
-it('should count per timeframe', async ({ t, $ }) => {
-  $.req.ip = '127.0.0.1'
-
-  // 2 years ago
-  $.mockDate(ago(2, 'year'))
-  var throttler = await $.vindu($)
-  $.resetDate()
-
-  var result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
-
-  t.deepStrictEqual(result, [0, 0, 0, 0, 0, 1])
-
-  var count = await $.db('request').count()
-  t.equal(count, 1)
-
-  // 5 minutes ago
-  $.mockDate(ago(5, 'minute'))
-  throttler = await $.vindu($)
-  $.resetDate()
-
-  result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
-
-  t.deepStrictEqual(result, [0, 1, 1, 1, 1, 2])
-
-  count = await $.db('request').count()
-  t.equal(count, 2)
-
-  // now
-  throttler = await $.vindu($)
-
-  result = await Promise.all([
-    throttler.minute(),
-    throttler.hour(),
-    throttler.day(),
-    throttler.month(),
-    throttler.year(),
-    throttler.total()
-  ])
-
-  t.deepStrictEqual(result, [1, 2, 2, 2, 2, 3])
-
-  result = await throttler.minute(6)
-  t.equal(result, 2)
-
-  count = await $.db('request').count()
-  t.equal(count, 3)
+  var cache = await $.db('request-cache').get()
+  t.equal(cache.minute, 1)
+  t.equal(cache.month, 1)
+  t.equal(cache.year, 1)
 })

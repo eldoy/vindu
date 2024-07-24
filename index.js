@@ -1,38 +1,18 @@
-var ago = require('./lib/ago.js')
+var updateCache = require('./lib/updateCache.js')
 
-module.exports = async function ($, opt = {}) {
+var fields = ['minute', 'month', 'year']
+
+module.exports = async function vindu($, opt = {}) {
   var key = opt.key || $.req?.ip
   var collection = opt.collection || 'request'
 
-  var request = await $.db(collection).create({ key })
+  var coll = $.db(`${collection}-cache`)
+  var cached = (await coll.get({ id: key })) || (await coll.create({ id: key }))
 
-  async function count(since) {
-    if (!key) return 0
-    var query = { id: { $lte: request.id }, key }
-    if (since) {
-      query.created_at = { $gte: since }
-    }
-    return $.db(collection).count(query)
-  }
+  // Happens in background
+  updateCache($, key, collection)
 
-  return {
-    minute: function (value = 1) {
-      return count(ago(value, 'minute'))
-    },
-    hour: function (value = 1) {
-      return count(ago(value, 'hour'))
-    },
-    day: function (value = 1) {
-      return count(ago(value, 'day'))
-    },
-    month: function (value = 1) {
-      return count(ago(value * 30, 'day'))
-    },
-    year: function (value = 1) {
-      return count(ago(value * 30 * 12, 'day'))
-    },
-    total: function () {
-      return count()
-    }
-  }
+  for (var f of fields) cached[f] = (cached[f] || 0) + 1
+
+  return cached
 }
