@@ -26,7 +26,7 @@ var options = {
 }
 
 // Returns the number of requests per minute, month and year
-var [minute, month, year] = await vindu($, options)
+var { minute, month, year } = await vindu($, options)
 
 function rateLimit(res) {
   res.statusCode = 429
